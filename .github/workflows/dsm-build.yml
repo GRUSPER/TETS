@@ -1,0 +1,76 @@
+```yaml
+name: DSM Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download DSM source archive
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p input
+
+          gh release download DSM \
+            --repo "${GITHUB_REPOSITORY}" \
+            --pattern "DSM-v0.2.1.zip" \
+            --dir input
+
+          echo "Downloaded:"
+          ls -lh input/
+
+      - name: Extract DSM
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p source
+
+          unzip -q input/DSM-v0.2.1.zip -d source
+
+          echo "Extracted files:"
+          find source -maxdepth 3 -type f | sort | head -200
+
+      - name: Inspect DSM project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Searching for package.json..."
+
+          find source -name package.json -type f -print
+
+          echo
+          echo "Project directories:"
+          find source -maxdepth 2 -type d | sort
+
+      - name: Show package.json
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PACKAGE_JSON="$(find source -name package.json -type f | head -1)"
+
+          if [ -z "${PACKAGE_JSON}" ]; then
+            echo "ERROR: package.json not found"
+            exit 1
+          fi
+
+          echo "Using:"
+          echo "${PACKAGE_JSON}"
+
+          echo
+          echo "========== package.json =========="
+          cat "${PACKAGE_JSON}"
+          echo "=================================="
+```
