@@ -1,12 +1,10 @@
 name: TETS - Test Build and Release
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/test-release.yml"
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/workflows/test-release.yml]
 
 permissions:
   contents: write
@@ -14,25 +12,23 @@ permissions:
 jobs:
   test-release:
     runs-on: ubuntu-latest
-
     steps:
       - name: Create test files
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
-          cat > dist/README.txt <<'EOF'
-TETS GitHub Actions test
-This file was created by GitHub Actions.
-EOF
-          printf 'Repository: %s\nCommit: %s\nRun: %s\n' "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_NUMBER" > dist/build-info.txt
+          echo 'TETS GitHub Actions test' > dist/README.txt
+          echo "Repository: ${GITHUB_REPOSITORY}" > dist/build-info.txt
+          echo "Commit: ${GITHUB_SHA}" >> dist/build-info.txt
+          echo "Run: ${GITHUB_RUN_NUMBER}" >> dist/build-info.txt
           cd dist
           zip -9 TETS-actions-test.zip README.txt build-info.txt
 
       - name: Create GitHub Release and upload ZIP
         shell: bash
         env:
-          GH_TOKEN: "${{ github.token }}"
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           TAG="actions-test-${GITHUB_RUN_NUMBER}"
@@ -43,4 +39,4 @@ EOF
         run: |
           TAG="actions-test-${GITHUB_RUN_NUMBER}"
           echo "Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
-          echo "Asset:   https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/TETS-actions-test.zip"
+          echo "Asset: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/TETS-actions-test.zip"
