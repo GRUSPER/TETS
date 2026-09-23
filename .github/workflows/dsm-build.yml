@@ -58,6 +58,50 @@ jobs:
           set -euo pipefail
           pnpm build-win
 
+      - name: Analyze packaged application
+        shell: bash
+        working-directory: source/DSM
+        run: |
+          set -euo pipefail
+
+          PACKAGED="dist/electron/Packaged"
+          UNPACKED="${PACKAGED}/win-unpacked"
+          ASAR="${UNPACKED}/resources/app.asar"
+
+          echo "========== PACKAGE SIZES =========="
+          du -sh "${UNPACKED}" "${ASAR}" "${PACKAGED}/DSM 0.2.1.exe" "${PACKAGED}/DSM Setup 0.2.1.exe" 2>/dev/null || true
+          echo "==================================="
+
+          echo
+          echo "========== TOP FILES IN APP =========="
+          find "${UNPACKED}" -type f -printf '%s %p\n' 2>/dev/null \
+            | sort -nr \
+            | head -50 \
+            | awk '{printf "%.1f MB  ", $1/1024/1024; $1=""; sub(/^ /,""); print}'
+          echo "======================================="
+
+          if command -v npx >/dev/null 2>&1 && [ -f "${ASAR}" ]; then
+            echo
+            echo "========== APP.ASAR CONTENT =========="
+            npx --yes @electron/asar@4.0.1 list "${ASAR}" > asar-list.txt
+            echo "ASAR entries: $(wc -l < asar-list.txt)"
+            echo
+            echo "Largest files inside app.asar:"
+            while IFS= read -r p; do
+              if [ -f "${UNPACKED}/resources/app.asar" ]; then
+                :
+              fi
+            done < asar-list.txt
+            echo "Use ASAR archive metadata for detailed inspection."
+            echo "======================================"
+          fi
+
+          echo
+          echo "========== TOP DIRECTORIES =========="
+          du -ah "${UNPACKED}" 2>/dev/null \
+            | sort -hr \
+            | head -40
+          echo "====================================="
       - name: Find build output
         shell: bash
         working-directory: source/DSM
