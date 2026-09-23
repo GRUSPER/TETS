@@ -7,8 +7,8 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-windows:
+    runs-on: windows-latest
 
     steps:
       - name: Download DSM source archive
@@ -17,14 +17,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-
           mkdir -p input
-
           gh release download DSM \
             --repo "${GITHUB_REPOSITORY}" \
             --pattern "DSM-v0.2.1.zip" \
             --dir input
-
           echo "Downloaded:"
           ls -lh input/
 
@@ -32,43 +29,49 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           mkdir -p source
-
           unzip -q input/DSM-v0.2.1.zip -d source
+          echo "Project:"
+          ls -la source/DSM
 
-          echo "Extracted files:"
-          find source -maxdepth 3 -type f | sort | head -200
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
-      - name: Inspect DSM project
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.8.0
+
+      - name: Install dependencies
         shell: bash
+        working-directory: source/DSM
         run: |
           set -euo pipefail
+          pnpm install
 
-          echo "Searching for package.json..."
-
-          find source -name package.json -type f -print
-
-          echo
-          echo "Project directories:"
-          find source -maxdepth 2 -type d | sort
-
-      - name: Show package.json
+      - name: Build Windows
         shell: bash
+        working-directory: source/DSM
         run: |
           set -euo pipefail
+          pnpm build-win
 
-          PACKAGE_JSON="$(find source -name package.json -type f | head -1)"
-
-          if [ -z "${PACKAGE_JSON}" ]; then
-            echo "ERROR: package.json not found"
-            exit 1
-          fi
-
-          echo "Using:"
-          echo "${PACKAGE_JSON}"
-
-          echo
-          echo "========== package.json =========="
-          cat "${PACKAGE_JSON}"
+      - name: Find build output
+        shell: bash
+        working-directory: source/DSM
+        run: |
+          set -euo pipefail
+          echo "========== BUILD OUTPUT =========="
+          find . -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.zip" \) -print
           echo "=================================="
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: DSM-Windows
+          path: |
+            source/DSM/dist/**
+            source/DSM/release/**
+          if-no-files-found: error
