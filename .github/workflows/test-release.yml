@@ -25,18 +25,18 @@ jobs:
 TETS GitHub Actions test
 This file was created by GitHub Actions.
 EOF
-          printf 'Repository: %s\nCommit: %s\nRun: %s\n'             "${GITHUB_REPOSITORY}" "${GITHUB_SHA}" "${GITHUB_RUN_NUMBER}"             > dist/build-info.txt
+          printf 'Repository: %s\nCommit: %s\nRun: %s\n' "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_NUMBER" > dist/build-info.txt
           cd dist
           zip -9 TETS-actions-test.zip README.txt build-info.txt
 
       - name: Create GitHub Release and upload ZIP
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: "${{ github.token }}"
         run: |
           set -euo pipefail
           TAG="actions-test-${GITHUB_RUN_NUMBER}"
-          gh release create "${TAG}"             dist/TETS-actions-test.zip             --repo "${GITHUB_REPOSITORY}"             --title "TETS Actions Test ${TAG}"             --notes "Automated GitHub Actions test release."
+          gh release create "${TAG}" dist/TETS-actions-test.zip --repo "${GITHUB_REPOSITORY}" --title "TETS Actions Test ${TAG}" --notes "Automated GitHub Actions test release."
 
       - name: Show download URL
         shell: bash
