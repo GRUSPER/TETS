@@ -1,4 +1,3 @@
-```yaml
 name: DSM Build
 
 on:
@@ -73,4 +72,3 @@ jobs:
           echo "========== package.json =========="
           cat "${PACKAGE_JSON}"
           echo "=================================="
-```
