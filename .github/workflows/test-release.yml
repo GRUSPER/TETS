@@ -1,0 +1,46 @@
+name: TETS - Test Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/test-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create test files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cat > dist/README.txt <<'EOF'
+TETS GitHub Actions test
+This file was created by GitHub Actions.
+EOF
+          printf 'Repository: %s\nCommit: %s\nRun: %s\n'             "${GITHUB_REPOSITORY}" "${GITHUB_SHA}" "${GITHUB_RUN_NUMBER}"             > dist/build-info.txt
+          cd dist
+          zip -9 TETS-actions-test.zip README.txt build-info.txt
+
+      - name: Create GitHub Release and upload ZIP
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="actions-test-${GITHUB_RUN_NUMBER}"
+          gh release create "${TAG}"             dist/TETS-actions-test.zip             --repo "${GITHUB_REPOSITORY}"             --title "TETS Actions Test ${TAG}"             --notes "Automated GitHub Actions test release."
+
+      - name: Show download URL
+        shell: bash
+        run: |
+          TAG="actions-test-${GITHUB_RUN_NUMBER}"
+          echo "Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
+          echo "Asset:   https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/TETS-actions-test.zip"
